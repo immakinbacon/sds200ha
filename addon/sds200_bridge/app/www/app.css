@@ -1,0 +1,1179 @@
+/* Standalone, deliberately: this page is served through Home Assistant
+   ingress, which renders it in an iframe without inheriting HA's own theme
+   variables, and the add-on container has no network access to fetch fonts
+   or a CSS framework. So: system fonts, and a light/dark palette that
+   follows the browser (which, inside HA's iframe, follows HA's theme). */
+
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #dfe2e7;
+  --text: #17191c;
+  --muted: #61666e;
+  --accent: #03a9f4;
+  --accent-text: #ffffff;
+  --danger: #c62828;
+  --warn-bg: #fff6e0;
+  --warn-border: #e8b23a;
+  --error-bg: #fdecec;
+  --error-border: #d94f4f;
+  --ok: #2e9e4f;
+  --idle: #9aa0a8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111417;
+    --card: #1c2024;
+    --border: #2e343a;
+    --text: #e6e8ea;
+    --muted: #9aa2ab;
+    --danger: #ef8a8a;
+    --warn-bg: #33290f;
+    --warn-border: #9a7a2a;
+    --error-bg: #3a1d1d;
+    --error-border: #a04a4a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 24px 20px 60px;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+header,
+main {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Tabs -------------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0 20px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  padding: 9px 14px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+/* Zero-size rather than display:none -- a hidden media element can be
+   deprioritized or suspended by the browser, which risks pausing the audio
+   playing in it. A zero-size box in normal flow still runs. */
+#audio-sink {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+#audio-sink audio {
+  width: 0;
+  height: 0;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.sub,
+.note,
+small {
+  color: var(--muted);
+}
+
+.sub {
+  margin: 0 0 20px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.scanner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+/* A long scanner name ellipsises rather than squeezing the button. */
+.scanner-head button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.scanner-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.scanner-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Live reachability of the running scanner, not of what's in the form --
+   see the title text set in settings.js. */
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--idle);
+  flex: none;
+}
+
+.dot[data-state="up"] {
+  background: var(--ok);
+}
+
+.dot[data-state="down"] {
+  background: var(--danger);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+label {
+  display: block;
+  min-width: 0;
+}
+
+label > span {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+label small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.checks {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.check input {
+  margin: 3px 0 0;
+  flex: none;
+}
+
+.check > span {
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0;
+}
+
+.check small {
+  font-weight: 400;
+}
+
+details.poe,
+details.wx,
+details.avoids {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+/* One avoided channel: what it was on the left, the two ways out of it
+   together on the right. Both are buttons -- Forget is destructive in its
+   own right (it discards an index nothing can recover), so it carries the
+   danger outline rather than hiding as a link. */
+.avoid-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+.avoid-entry:first-child {
+  border-top: none;
+}
+
+/* Takes the slack, so the buttons sit at the right-hand edge instead of
+   being spread across the row with the text. */
+.avoid-entry-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.avoid-entry-text .note {
+  margin: 0;
+}
+
+.avoid-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+/* The two read-back buttons, above the list rather than in it: they ask
+   about every row at once, so sitting in one row would read as belonging
+   to it. */
+.avoid-tools {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.avoid-tools button {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* One size for the pair: .secondary and .danger carry different padding for
+   the places they came from (a form footer, a scanner header), and side by
+   side that difference reads as two mismatched buttons. */
+.avoid-actions button {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.note {
+  margin: 10px 0 14px;
+  font-size: 13px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  padding: 10px 20px;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+}
+
+/* Outlined rather than filled: the power-cycle button sits in the scanner
+   header where a solid red block would read as an alarm, but it still has to
+   look pressable and destructive. */
+button.danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+button.link {
+  background: none;
+  border: none;
+  padding: 4px;
+  text-decoration: underline;
+  color: var(--muted);
+}
+
+button.link.danger {
+  color: var(--danger);
+}
+
+button[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.messages:empty {
+  display: none;
+}
+
+.message {
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.message ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.message.error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+}
+
+.message.warning {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+}
+
+.message.ok {
+  background: var(--card);
+  border: 1px solid var(--ok);
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 26px 10px;
+}
+
+/* Was a fixed bar at the bottom of the window when this page was only a
+   settings form. Now that the page has tabs, a pinned bar would hover over
+   the History and Control tabs too, offering to save something they don't
+   own -- so each editable tab carries its own save row instead. */
+.inline-savebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--border);
+}
+
+.status {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.error-text {
+  color: var(--danger);
+}
+
+/* Control tab -------------------------------------------------------- */
+
+/* The display and the three soft keys under it, spanning the panel.
+   Everything here reads out of the scanner's data (control.js `_readout`);
+   none of it imitates the unit's own LCD, which is what this used to be --
+   a green monospace <pre> mirroring 30-column lines character for
+   character. That was faithful and useless: fixed columns can't reflow,
+   can't be styled, and threw away the structure the add-on had already
+   parsed out of the very same payload. */
+.display-stack {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.display {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.display-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Squelch open, said with a chip that turns green rather than with a whole
+   panel that does. */
+.state-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.state-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--idle);
+}
+
+.state-chip.live {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.state-chip.live .state-dot {
+  background: var(--ok);
+  animation: state-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-chip.live .state-dot {
+    animation: none;
+  }
+}
+
+@keyframes state-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.display-head .badge {
+  margin-left: 0;
+}
+
+/* The channel is the headline; department and system go under it, which is
+   the order the unit stacks them in. */
+.display-title {
+  font-size: 24px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.display-sub {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.display-sub:empty {
+  display: none;
+}
+
+/* Signal as a level. The character screen could only ever put the number in
+   a corner of a line. */
+.display-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.meter-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ok);
+  transition: width 0.3s ease;
+}
+
+.meter-value {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.display-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px 16px;
+  margin-top: 14px;
+}
+
+.display-grid:empty {
+  margin-top: 0;
+}
+
+.tile-name {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tile-value {
+  margin-top: 2px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The screen's own text, for everything GSI can't describe -- menus, the
+   weather-alert screen, the boot screen. Rows of text, not a character
+   grid: each line is split on the scanner's own column padding and the
+   pieces pushed to opposite ends, which needs no fixed-width font. */
+.screen-text {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.screen-text > summary {
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.screen-lines {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.screen-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.screen-col {
+  overflow-wrap: anywhere;
+}
+
+/* Reverse video is how the scanner marks the selected row. */
+.screen-row .rev {
+  border-radius: 3px;
+  padding: 0 3px;
+  background: var(--text);
+  color: var(--bg);
+}
+
+.screen-row .und {
+  text-decoration: underline;
+}
+
+.screen-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Full width of the display above them, matching the unit's own face. */
+.soft-keys .key {
+  min-width: 0;
+}
+
+/* The open drawer's display says everything the closed panel's summary says
+   and more, so the summary steps aside rather than repeating it. */
+.scanner-panel.drawer-open > .now-playing {
+  display: none;
+}
+
+.now-playing {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* Squelch open: the one piece of state worth seeing from across a room. */
+.scanner-panel.receiving .now-playing {
+  border-color: var(--ok);
+  box-shadow: inset 0 0 0 1px var(--ok);
+}
+
+.np-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.np-label {
+  font-weight: 600;
+}
+
+.np-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px 16px;
+  margin-top: 8px;
+}
+
+.np-field {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  border-bottom: 1px dotted var(--border);
+  padding-bottom: 2px;
+}
+
+.np-name {
+  color: var(--muted);
+}
+
+.np-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.controls {
+  margin-top: 14px;
+  display: grid;
+  /* minmax(0, 1fr), not the default auto: an auto track is floored at its
+     content's min-content width, which lets the slider row push past the
+     card's edge on a phone instead of dropping to one slider per line. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.control-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audio-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.audio-row button.primary {
+  padding: 8px 18px;
+}
+
+.scanner-drawer > summary {
+  padding: 4px 0;
+  color: var(--muted);
+}
+
+.scanner-drawer[open] > summary {
+  margin-bottom: 10px;
+}
+
+.scanner-drawer > *:not(summary) {
+  margin-bottom: 8px;
+}
+
+.scanner-drawer > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Squelch under volume, each on one line: a labelled rail rather than a
+   block with a heading of its own. */
+.level-row {
+  display: grid;
+  gap: 6px;
+}
+
+/* The last few calls on the left, everything that drives the scanner in a
+   column on the right. One column once there isn't room for both. */
+.drawer-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .drawer-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.drawer-column {
+  display: grid;
+  gap: 10px;
+}
+
+.recent {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.recent-head {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.recent-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.recent-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 13px;
+  border-top: 1px dotted var(--border);
+}
+
+.recent-row:first-child {
+  border-top: none;
+}
+
+.recent-row time,
+.recent-row small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.recent-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A call still in progress, same green the now-playing box uses. */
+.recent-row.live .recent-label,
+.recent-row.live small {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.slider-name {
+  font-weight: 600;
+  min-width: 54px;
+}
+
+.slider .readout {
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
+  text-align: right;
+}
+
+.slider input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+/* One column of key blocks, all the same width and all on the same three
+   columns, so the soft keys, the rotary row and the keypad line up down
+   their edges instead of each being its own width. */
+.keys {
+  display: grid;
+  gap: 6px;
+  max-width: 340px;
+}
+
+.key-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+/* Eight cells: the seven function keys four across, then three, and the
+   permanent avoid in the gap the second row leaves. */
+.fn-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 4px;
+}
+
+.key {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  min-width: 52px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.key:active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+/* Carried by the danger colour rather than filled with it: this sits *in* the
+   grid of ordinary keys and has to read as the one that doesn't wear off,
+   not as an alarm (same reasoning as button.danger above, which can't be
+   reused here -- .key comes after it and would win on every property). */
+.key.warn {
+  color: var(--danger);
+  border-color: var(--danger);
+  white-space: nowrap;
+}
+
+.key.warn:active:not([disabled]) {
+  background: var(--danger);
+  color: var(--accent-text);
+}
+
+.command-status {
+  margin: 0;
+  min-height: 1.4em;
+}
+
+/* History tab -------------------------------------------------------- */
+
+/* Fields in a grid, buttons out of it. Inside the grid the buttons took a
+   column of their own and stretched to a field's width, which put them at a
+   different size from every other button in the UI and left a hole in the
+   row whenever the five fields reflowed. */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  /* The full width, so all five fields sit on one row at desk widths --
+     sharing the row with the buttons costs a column, which puts From and To
+     on a second row and leaves a hole above the buttons. */
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.filter-field {
+  min-width: 0;
+}
+
+.filter-field input[type="search"],
+.filter-field input[type="datetime-local"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+/* The date pickers are the widest thing in the bar; without this they push
+   the grid's auto-fit to a column width the other fields don't need. */
+.filter-field input[type="datetime-local"] {
+  font-size: 13px;
+}
+
+/* Their own line under the fields, right-aligned: the bar's actions rather
+   than a sixth field. */
+.filter-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* One size for the pair: .secondary and .danger carry different padding for
+   the places they came from -- see the same pairing on .avoid-actions. */
+.filter-actions button {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-list {
+  display: grid;
+  gap: 6px;
+}
+
+.history-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.history-row.live {
+  border-color: var(--ok);
+}
+
+.hr-when {
+  flex: none;
+  width: 92px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+
+.hr-when small {
+  display: block;
+  font-size: 11px;
+}
+
+.hr-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.hr-label {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.hr-rssi {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Last in the row: an offer rather than the point of the row, so it is a
+   button at the row's own scale -- smaller than a form's save button, but
+   still visibly pressable. */
+.hr-actions {
+  flex: none;
+  white-space: nowrap;
+}
+
+.hr-actions button {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Which scanner heard it. Filled rather than outlined so it reads as the
+   row's source rather than as one more detail of the call. */
+.chip.scanner {
+  border-color: transparent;
+  background: rgba(127, 133, 141, 0.18);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Digital modes get a colour so a list of mixed traffic is skimmable;
+   analog stays neutral because it's the common case. */
+.chip.mode-p25,
+.chip.mode-dmr,
+.chip.mode-nxdn,
+.chip.mode-provoice,
+.chip.mode-edacs,
+.chip.mode-ltr,
+.chip.mode-motorola {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Actions tab --------------------------------------------------------- */
+
+.action.disabled {
+  opacity: 0.6;
+}
+
+.action-name {
+  font-weight: 600;
+}
+
+.action-section {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.action-section > .grid,
+.action-section > div {
+  margin-top: 12px;
+}
+
+.field-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.mode-picker {
+  margin-top: 16px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.chip-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+}
+
+.chip-check input {
+  margin: 0;
+}
+
+.data-editor {
+  margin-top: 16px;
+}
+
+.data-rows {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.data-row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.data-row input {
+  flex: 1;
+}
+
+.data-row .link {
+  flex: none;
+}
+
+.action-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+/* Transcripts on a history row. Deliberately quiet: the transcript is a
+   convenience, and this audio is narrowband and often vocoded, so what it
+   says is a fair guess rather than a record. Styling it like a quotation
+   makes that legible without a disclaimer on every row. */
+.hr-transcript {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+.hr-transcript .linkish {
+  background: none;
+  border: none;
+  padding: 0 0.2rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+.hr-transcript .linkish:hover { opacity: 1; }
+.hr-speech { opacity: 0.85; font-style: italic; }
+.hr-nospeech { opacity: 0.45; font-size: 0.85em; }

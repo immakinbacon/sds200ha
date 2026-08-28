@@ -1,0 +1,74 @@
+name: SDS200 Bridge
+version: "0.7.59"
+slug: sds200_bridge
+description: >-
+  Bridges one or more Uniden SDS200 scanners (control protocol + live audio)
+  onto the local network for Home Assistant.
+url: "https://github.com/immakinbacon/sds200ha"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+init: false
+startup: services
+boot: auto
+# Scanners are configured in the add-on's own web UI ("Open Web UI" on the
+# add-on page), served over ingress by the same aiohttp app as the REST API
+# -- so it's authenticated by Home Assistant and needs no port of its own.
+ingress: true
+ingress_port: 8000
+# Lets the add-on's action rules call a Home Assistant service or fire an
+# event on HA's bus (app/triggers.py, via the Supervisor proxy at
+# http://supervisor/core/api). Without it the SUPERVISOR_TOKEN is still
+# issued but the proxy answers 401, so both of those action types would fail
+# with nothing but an auth error to explain why.
+homeassistant_api: true
+panel_icon: mdi:radio-tower
+panel_title: SDS200
+ports:
+  8000/tcp: 8000
+  5004/udp: 5004
+  5005/udp: 5005
+  5006/udp: 5006
+  5007/udp: 5007
+  5008/udp: 5008
+  5009/udp: 5009
+  5010/udp: 5010
+  5011/udp: 5011
+ports_description:
+  8000/tcp: REST API, WebSocket status feed, and live per-scanner audio (HTTP or WebSocket)
+  5004/udp: RTP audio receive port for scanner slot 1 (slots 2-8 use 5005-5011)
+# LEGACY -- read once, then never again. Settings moved into the add-on's
+# own UI (/data/config.json, see app/config_store.py). This schema is kept
+# for one release purely so the migration has something to migrate: remove
+# it and Supervisor strips the now-unknown keys out of /data/options.json on
+# its next validation pass, throwing away the existing configuration before
+# the add-on ever gets to read it. Once everyone has started 0.2.x at least
+# once, both blocks below can go and the Configuration tab disappears with
+# them. Editing these has no effect -- the add-on ignores options.json as
+# soon as /data/config.json exists.
+options:
+  log_level: info
+  scanners: []
+schema:
+  log_level: list(trace|debug|info|warning|error)
+  scanners:
+    - name: str
+      host: str
+      control_port: int(1,65535)?
+      rtsp_port: int(1,65535)?
+      poe_reset_host: str?
+      poe_reset_username: str?
+      # Not "password?": that schema type triggers a Have I Been Pwned
+      # breach-check lookup on save, which times out (and fails the whole
+      # save as an "unknown error") on a network without a route to HIBP's
+      # API -- confirmed via Supervisor's own log. Plain str loses the
+      # masked/starred input styling but actually saves. (The add-on's own
+      # settings UI has neither problem: it masks the field and never sends
+      # a stored password back to the browser.)
+      poe_reset_password: str?
+      poe_reset_interface: str?
+      poe_reset_verify_ssl: bool?
+      poe_reset_use_ssl: bool?
+      auto_reboot_on_audio_failure: bool?
+      auto_reboot_on_control_failure: bool?

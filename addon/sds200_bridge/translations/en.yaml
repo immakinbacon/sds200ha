@@ -1,0 +1,16 @@
+# Labels for the legacy Supervisor Configuration tab, which now only exists
+# so the one-time migration into the add-on's own settings has something to
+# read (see config.yaml). Says so on the tab itself, so nobody edits it and
+# then wonders why nothing changed.
+configuration:
+  log_level:
+    name: Log level (legacy — no longer used)
+    description: >-
+      Moved into the add-on's own settings. Open the add-on's Web UI to
+      change it. Editing this has no effect.
+  scanners:
+    name: Scanners (legacy — no longer used)
+    description: >-
+      Moved into the add-on's own settings. These entries were copied across
+      the first time version 0.2.0 or later started, and are not read again.
+      Open the add-on's Web UI to add, edit or remove scanners.
