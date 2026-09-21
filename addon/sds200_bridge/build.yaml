@@ -1,0 +1,7 @@
+build_from:
+  aarch64: ghcr.io/home-assistant/aarch64-base:3.19
+  amd64: ghcr.io/home-assistant/amd64-base:3.19
+  armv7: ghcr.io/home-assistant/armv7-base:3.19
+labels:
+  org.opencontainers.image.title: SDS200 Bridge
+  org.opencontainers.image.description: Uniden SDS200 control + audio bridge for Home Assistant

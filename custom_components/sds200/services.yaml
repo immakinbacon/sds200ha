@@ -1,0 +1,144 @@
+key:
+  name: Press key
+  description: Press a key on the scanner, as if pressed on the front panel.
+  fields:
+    device_id:
+      name: Scanner
+      description: The scanner device to control.
+      required: true
+      selector:
+        device:
+          integration: sds200
+    code:
+      name: Key
+      description: Key name (menu, enter, 1, dot, ...) or raw key code (M, E, 1, .).
+      required: true
+      selector:
+        text:
+    mode:
+      name: Mode
+      description: Press mode passed through to the scanner.
+      default: "P"
+      selector:
+        text:
+
+hold:
+  name: Hold
+  description: >-
+    Hold on the channel the scanner is on, or on a named system/department.
+    Leave the target fields empty for the current channel -- the add-on looks
+    up its list index, which the command requires.
+  fields:
+    device_id:
+      name: Scanner
+      required: true
+      selector:
+        device:
+          integration: sds200
+    hold:
+      name: Hold
+      description: >-
+        On to hold, off to release. Leave unset to toggle, which is what the
+        scanner's own command does.
+      selector:
+        boolean:
+    tkw:
+      name: Target key word
+      description: >-
+        Only for holding on something other than the current channel.
+        Target-word key from the "tkd and 1st,2nd opt" table (CFREQ and TGID
+        are confirmed on this hardware; SYS/DEPT/SITE are not).
+      selector:
+        text:
+    xxx1:
+      name: First index
+      selector:
+        text:
+    xxx2:
+      name: Second index
+      selector:
+        text:
+
+avoid:
+  name: Avoid
+  description: Avoid, temporarily avoid, or stop avoiding a system/department/channel/frequency.
+  fields:
+    device_id:
+      name: Scanner
+      required: true
+      selector:
+        device:
+          integration: sds200
+    tkw:
+      name: Target key word
+      selector:
+        text:
+    xxx1:
+      name: First index
+      selector:
+        text:
+    xxx2:
+      name: Second index
+      selector:
+        text:
+    status:
+      name: Status
+      description: 1 = Permanent avoid, 2 = Temporary avoid, 3 = Stop avoiding.
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 3
+          mode: box
+
+set_volume:
+  name: Set volume
+  description: Set the scanner's volume level directly (0-29 on SDS200).
+  fields:
+    device_id:
+      name: Scanner
+      required: true
+      selector:
+        device:
+          integration: sds200
+    level:
+      name: Level
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 29
+          mode: box
+
+set_squelch:
+  name: Set squelch
+  description: Set the scanner's squelch level directly (0-19 on SDS200).
+  fields:
+    device_id:
+      name: Scanner
+      required: true
+      selector:
+        device:
+          integration: sds200
+    level:
+      name: Level
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 19
+          mode: box
+
+reboot:
+  name: Reboot
+  description: >-
+    Power-cycle the scanner via its configured poe_reset_* options (set in
+    the add-on's per-scanner options). Fails if that isn't configured for
+    this scanner.
+  fields:
+    device_id:
+      name: Scanner
+      required: true
+      selector:
+        device:
+          integration: sds200

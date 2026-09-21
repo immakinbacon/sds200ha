@@ -1,0 +1,107 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to the SDS200 Bridge add-on",
+        "description": "Enter the host and port where the sds200_bridge add-on's API is reachable. Port is the add-on's *internal* port (8000 by default) -- use that even if you remapped the external port in the add-on's Network settings, that remap doesn't apply here. Host is the add-on's Supervisor hostname, which for a locally-installed add-on is NOT predictable (not just the slug, and not 'local_<slug>' either) -- on one real install it was 'aa65dcfd-sds200-bridge'. If unsure, check from a terminal on the same internal network with `curl http://<guess>:8000/scanners`, or via the Home Assistant CLI's `ha addons info sds200_bridge`.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "reconfigure": {
+        "title": "Change the SDS200 Bridge add-on's host or port",
+        "description": "Update where the sds200_bridge add-on's API is reachable. Port is the add-on's *internal* port (8000 by default) -- remapping the external port in the add-on's Network settings does not change it, so leave this at 8000 unless you changed main.py's HTTP_PORT. If you are connecting over the LAN by the Home Assistant host's own IP instead of the add-on's Supervisor hostname, use the *external* (remapped) port here instead.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the SDS200 Bridge add-on at that host/port."
+    },
+    "abort": {
+      "already_configured": "This add-on connection is already configured.",
+      "reconfigure_successful": "The SDS200 Bridge connection was updated."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "display": {
+        "name": "Display"
+      },
+      "frequency": {
+        "name": "Frequency"
+      },
+      "mode": {
+        "name": "Mode"
+      },
+      "ctcss_dcs": {
+        "name": "CTCSS/DCS"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "noise": {
+        "name": "Noise"
+      },
+      "system": {
+        "name": "System"
+      },
+      "department": {
+        "name": "Department"
+      },
+      "channel": {
+        "name": "Channel"
+      },
+      "transcript": {
+        "name": "Last transcript"
+      }
+    },
+    "binary_sensor": {
+      "muted": {
+        "name": "Muted"
+      },
+      "weather_alert": {
+        "name": "Weather Alert"
+      }
+    },
+    "media_player": {
+      "scanner_audio": {
+        "name": "Audio"
+      }
+    },
+    "number": {
+      "squelch": {
+        "name": "Squelch"
+      }
+    }
+  },
+  "services": {
+    "key": {
+      "name": "Press key",
+      "description": "Press a key on the scanner, as if pressed on the front panel."
+    },
+    "hold": {
+      "name": "Hold",
+      "description": "Hold on a system, department, or channel."
+    },
+    "avoid": {
+      "name": "Avoid",
+      "description": "Avoid, temporarily avoid, or stop avoiding a system/department/channel/frequency."
+    },
+    "set_volume": {
+      "name": "Set volume",
+      "description": "Set the scanner's volume level directly."
+    },
+    "set_squelch": {
+      "name": "Set squelch",
+      "description": "Set the scanner's squelch level directly."
+    },
+    "reboot": {
+      "name": "Reboot",
+      "description": "Power-cycle the scanner by cutting and restoring PoE power at its switch port, via the add-on's poe_reset_* options."
+    }
+  }
+}

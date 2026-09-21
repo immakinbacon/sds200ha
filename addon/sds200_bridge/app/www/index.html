@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SDS200 Bridge</title>
+    <link rel="stylesheet" href="static/app.css" />
+  </head>
+  <body>
+    <header>
+      <h1>SDS200 Bridge</h1>
+      <nav id="tabs" class="tabs"></nav>
+    </header>
+
+    <main id="app" aria-busy="true">
+      <p class="loading">Loading…</p>
+    </main>
+
+    <!-- The <audio> elements the player decodes into live here rather than
+         inside a control panel: re-rendering the scanner list must not tear
+         down an element that is mid-stream. In the DOM rather than detached
+         (a detached media element can be garbage-collected while playing),
+         but zero-size and hidden from assistive tech -- there are no
+         controls on them to reach, the page's own Listen button is the
+         control surface. -->
+    <div id="audio-sink" aria-hidden="true"></div>
+
+    <template id="scanner-template">
+      <section class="scanner card">
+        <div class="scanner-head">
+          <div class="scanner-title">
+            <span class="dot" data-state="unknown" title="Not started yet"></span>
+            <h2 class="scanner-name">New scanner</h2>
+          </div>
+          <button type="button" class="link danger" data-action="remove">Remove</button>
+        </div>
+
+        <div class="grid">
+          <label>
+            <span>Name</span>
+            <input type="text" data-field="name" placeholder="Home" autocomplete="off" />
+            <small>Used for the entity names in Home Assistant, and to build the scanner's id.</small>
+          </label>
+          <label>
+            <span>Host</span>
+            <input type="text" data-field="host" placeholder="192.0.2.232" autocomplete="off" />
+            <small>The scanner's IP address or hostname on the local network.</small>
+          </label>
+          <label>
+            <span>Control port</span>
+            <input type="number" data-field="control_port" min="1" max="65535" />
+            <small>UDP. Leave at 50536 unless you've changed it on the scanner.</small>
+          </label>
+          <label>
+            <span>RTSP port</span>
+            <input type="number" data-field="rtsp_port" min="1" max="65535" />
+            <small>TCP, for live audio. Leave at 554.</small>
+          </label>
+          <label>
+            <span>Detail poll interval (seconds)</span>
+            <input type="number" data-field="gsi_poll_interval" step="0.5" />
+            <small>
+              Sets how finely the receive history sees calls — a transmission shorter than this can
+              fall between two polls. Lower catches more, but this scanner answers detail polls
+              slowly and drops some, so below about a second you lose more than you gain.
+            </small>
+          </label>
+        </div>
+
+        <details class="wx">
+          <summary>Weather alerts <span class="badge" data-wx-badge></span></summary>
+          <p class="note">
+            A weather alert parks the scanner on the alert screen and it stays there until a key is
+            pressed — so an unattended scanner stops scanning until somebody notices. The add-on can
+            press the way back for you. It uses whichever soft key the scanner is showing a
+            “to scan” label above, so the fallback below is only used when no such label is on
+            screen. Actions can fire on the alert itself — see the Actions tab.
+          </p>
+          <div class="grid">
+            <label>
+              <span>Return to scanning after (seconds)</span>
+              <input type="number" data-field="wx_return_to_scan_s" min="0" max="3600" step="5" />
+              <small>0 leaves the scanner in the alert, which is what it does on its own.</small>
+            </label>
+            <label>
+              <span>Fallback key</span>
+              <select data-field="wx_return_to_scan_key">
+                <option value="">Don't press anything</option>
+                <option value="soft1">Soft 1 (left)</option>
+                <option value="soft2">Soft 2 (middle)</option>
+                <option value="soft3">Soft 3 (right)</option>
+                <option value="enter">E / yes</option>
+                <option value="menu">Menu</option>
+                <option value="avoid">Avoid</option>
+                <option value="rotary_push">Rotary push</option>
+              </select>
+              <small>Only used if the display offers no “to scan” soft key.</small>
+            </label>
+          </div>
+        </details>
+
+        <details class="transcribe">
+          <summary>Transcription <span class="badge" data-transcribe-badge></span></summary>
+          <p class="note">
+            Turns what this scanner hears into searchable text, using the speech-to-text server
+            configured under <strong>Add-on</strong> above. Off by default and per scanner,
+            because it costs CPU on whatever runs the model and a scanner parked on a weather
+            channel has nothing worth spending it on. Toggling it never interrupts audio.
+          </p>
+          <label class="check">
+            <input type="checkbox" data-field="require_audio" />
+            <span>
+              Only log calls this scanner played audio for
+              <small>
+                On a trunked digital system the receiver has signal whenever the site is
+                active, but the scanner only unmutes for a talkgroup you are monitoring —
+                so without this the history fills with other people's traffic. Never
+                applied while the audio feed looks dead, since hearing nothing then is not
+                evidence that nothing was said.
+              </small>
+            </span>
+          </label>
+          <label class="check">
+            <input type="checkbox" data-field="transcribe_enabled" />
+            <span>
+              Transcribe this scanner
+              <small>
+                Expect the gist, not a verbatim record. This audio is 8&nbsp;kHz telephone
+                bandwidth, and on a digital system it has already been through a voice codec
+                that rebuilds speech rather than carrying it — both cost the detail a speech
+                model leans on. Good enough to search; not good enough to quote.
+              </small>
+            </span>
+          </label>
+          <div class="grid">
+            <label>
+              <span>Only these modes</span>
+              <input type="text" data-field="transcribe_modes" placeholder="all modes" />
+              <small>
+                Comma-separated, e.g. <code>analog</code>. Blank means every mode. Worth
+                narrowing if digital traffic here transcribes badly — the two are different
+                problems and one can be worth it while the other is not.
+              </small>
+            </label>
+          </div>
+        </details>
+
+        <details class="stuck">
+          <summary>Stopped scanning <span class="badge" data-stuck-badge></span></summary>
+          <p class="note">
+            A scanner held on a system or department still reports itself as scanning — the mode
+            reads <em>Scan Mode</em> and the display says <em>Scanning…</em> — while actually
+            covering one department out of everything in the list. That has happened here three
+            times, twice for eleven hours. This watches for it and tells you; it never presses a
+            key, because pressing keys unattended is what caused it. Release it from the
+            <strong>Control</strong> tab. Actions can fire on this — see the Actions tab.
+          </p>
+          <div class="grid">
+            <label>
+              <span>Report a held system/department after (seconds)</span>
+              <input type="number" data-field="stuck_hold_s" min="0" max="604800" step="30" />
+              <small>
+                0 switches it off. Channel holds are ignored — that is what the card's Hold
+                button sets, so watching it would fire on ordinary use.
+              </small>
+            </label>
+            <label>
+              <span>Report hearing nothing for (seconds)</span>
+              <input type="number" data-field="stuck_silence_s" min="0" max="604800" step="300" />
+              <small>
+                0 switches it off, which is the default: how long is normal depends entirely on
+                how busy this scanner's lists are. Catches what a hold check can't — squelch wound
+                shut, an antenna knocked off, a receiver that stopped while the control link kept
+                answering.
+              </small>
+            </label>
+          </div>
+        </details>
+
+        <details class="avoids">
+          <summary>Avoided channels <span class="badge" data-avoid-badge></span></summary>
+          <p class="note">
+            Channels this add-on has permanently avoided, from <strong>Perm Avoid</strong> on the
+            Control tab. Those survive a restart, because the scanner saves them to flash — and once
+            avoided it never stops on the channel again, so the list index it was avoided by can't
+            be read back off it. This is where that index is kept.
+            <br /><br />
+            <strong>Un-avoid</strong> takes effect immediately but is <em>not</em> saved: the
+            scanner only writes to flash when a permanent avoid is made, so an un-avoided channel
+            comes back if the scanner restarts first. The row stays here saying so until the next
+            permanent avoid saves it — one avoid writes out everything pending at once.
+            <br /><br />
+            Avoids made on the unit's own keypad aren't recorded here — nothing reported them —
+            but the scanner can be asked. <strong>Check</strong> reads each row back off it and
+            says whether it still agrees. <strong>Full scan</strong> walks the whole database to
+            find avoids nothing here recorded, including a keypress that landed on the wrong
+            channel; it takes a few minutes and reads several thousand entries, so it is never
+            automatic. <strong>Forget</strong> drops a stale record without sending anything.
+          </p>
+          <div class="avoid-tools">
+            <button type="button" class="secondary" data-action="verify-avoids">Check</button>
+            <button type="button" class="secondary" data-action="sweep-avoids">Full scan</button>
+          </div>
+          <p class="status" data-avoid-status></p>
+          <div data-avoid-list></div>
+          <div data-avoid-unrecorded></div>
+        </details>
+
+        <details class="poe">
+          <summary>PoE power-cycle recovery <span class="badge" data-poe-badge></span></summary>
+          <p class="note">
+            The SDS200 has no network reboot command, and both its audio and its control interface
+            can wedge until it is physically power-cycled. If the scanner is PoE-powered from a
+            MikroTik switch, the add-on can cut and restore power at the switch port over RouterOS's
+            REST API. All four fields are needed together.
+          </p>
+          <div class="grid">
+            <label>
+              <span>Router host</span>
+              <input type="text" data-field="poe_reset_host" placeholder="198.51.100.1" autocomplete="off" />
+            </label>
+            <label>
+              <span>Switch port</span>
+              <input type="text" data-field="poe_reset_interface" placeholder="ether12" autocomplete="off" />
+              <small>The interface the scanner is plugged into.</small>
+            </label>
+            <label>
+              <span>Username</span>
+              <input type="text" data-field="poe_reset_username" autocomplete="off" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input type="password" data-field="poe_reset_password" autocomplete="new-password" />
+              <small data-password-hint></small>
+            </label>
+          </div>
+          <div class="checks">
+            <label class="check">
+              <input type="checkbox" data-field="poe_reset_use_ssl" />
+              <span>Use HTTPS <small>Off if only RouterOS's plain <code>www</code> service is enabled.</small></span>
+            </label>
+            <label class="check">
+              <input type="checkbox" data-field="poe_reset_verify_ssl" />
+              <span>Verify the certificate <small>Off for RouterOS's default self-signed certificate.</small></span>
+            </label>
+            <label class="check">
+              <input type="checkbox" data-field="auto_reboot_on_audio_failure" />
+              <span>Power-cycle after repeated audio failures <small>Three failed audio sessions in a row.</small></span>
+            </label>
+            <label class="check">
+              <input type="checkbox" data-field="auto_reboot_on_control_failure" />
+              <span>Power-cycle when the scanner stops responding <small>Control interface dark for two minutes, up to three attempts.</small></span>
+            </label>
+          </div>
+        </details>
+      </section>
+    </template>
+
+    <!-- Classic scripts in dependency order, not modules: no build step
+         exists here, and the load order is short enough to be obvious. -->
+    <script src="static/util.js"></script>
+    <script src="static/audio.js"></script>
+    <script src="static/control.js"></script>
+    <script src="static/history.js"></script>
+    <script src="static/actions.js"></script>
+    <script src="static/settings.js"></script>
+    <script src="static/app.js"></script>
+  </body>
+</html>
